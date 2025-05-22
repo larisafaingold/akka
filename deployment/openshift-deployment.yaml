@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: akka-app
+  namespace: rhel-ai-cicd--akka
+  labels:
+    app: akka-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: akka-app
+  template:
+    metadata:
+      labels:
+        app: akka-app
+    spec:
+      containers:
+      - name: akka-app
+        image: images.paas.redhat.com/rhel-ai-cicd/akka:latest
+        ports:
+        - containerPort: 5000
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: akka-app-service
+  namespace: rhel-ai-cicd--akka
+spec:
+  selector:
+    app: akka-app
+  ports:
+  - port: 80
+    targetPort: 5000
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: akka-app-route
+  namespace: rhel-ai-cicd--akka
+  annotations:
+    shard: internal
+  labels:
+    shard: internal
+spec:
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  to:
+    kind: Service
+    name: akka-app-service
+  port:
+    targetPort: 80
